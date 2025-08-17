@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Fee Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles to override or extend Tailwind, primarily for table responsiveness */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light background */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+        h2 {
+            font-size: 1.5rem; /* Equivalent to text-2xl */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            font-size: 0.875rem; /* Equivalent to text-sm */
+            /* Removed: table-layout: fixed; */
+            border-radius: 8px; /* Rounded corners for table */
+            overflow: hidden; /* Ensures rounded corners apply to borders */
+        }
+        th, td {
+            border: 1px solid #e2e8f0; /* Light gray border */
+            padding: 8px 12px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        th:first-child, td:first-child { width: 30px; } /* # column */
+        th:nth-child(2), td:nth-child(2) { width: 140px; text-align: left; } /* Student's Name */
+        th:nth-child(3), td:nth-child(3) { width: 50px; } /* Class */
+        th:nth-child(4), td:nth-child(4) { width: 50px; } /* Advance Fee */
+        th:nth-child(5), td:nth-child(5) { width: 50px; } /* Fee Paid */
+        th:nth-child(6), td:nth-child(6) { width: 80px; } /* Joining Date */
+        th:nth-child(7), td:nth-child(7) { width: 50px; } /* Fixed Fee */
+        th:nth-child(8), td:nth-child(8) { width: 80px; } /* Payment Date */
+        th:nth-child(9), td:nth-child(9) { width: 50px; } /* Action */
+        th {
+            background-color: #f8fafc; /* Lighter background for headers */
+            font-size: 0.875rem; /* Equivalent to text-sm */
+            color: #4a5568; /* Darker gray text */
+        }
+        input, select, button {
+            font-size: 0.875rem; /* Equivalent to text-sm */
+            padding: 6px 8px;
+            border-radius: 6px; /* Slightly rounded for inputs/selects */
+            border: 1px solid #cbd5e0; /* Light border */
+        }
+        input[type="date"] {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .controls {
+            margin: 12px 0;
+            display: flex;
+            justify-content: center;
+            gap: 12px; /* Increased gap for better touch targets */
+            flex-wrap: wrap;
+            font-size: 0.875rem;
+            padding: 12px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            width: 100%;
+            max-width: 800px;
+        }
+        .totals {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1rem;
+            font-weight: bold;
+            background-color: #ffffff;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            width: 100%;
+            max-width: 800px;
+        }
+        .paid { color: #10b981; } /* Green-500 equivalent */
+        .unpaid { color: #ef4444; } /* Red-500 equivalent */
+        .delBtn {
+            background-color: #ef4444; /* Red-500 */
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 0.75rem; /* text-xs */
+            transition: background-color 0.2s ease;
+        }
+        .delBtn:hover {
+            background-color: #dc2626; /* Red-600 */
+        }
+        .button-primary {
+            background-color: #3b82f6; /* Blue-500 */
+            color: white;
+            font-weight: 600; /* semibold */
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.2s ease;
+        }
+        .button-primary:hover {
+            background-color: #2563eb; /* Blue-600 */
+        }
+        .button-secondary {
+            background-color: #e2e8f0; /* Gray-200 */
+            color: #4a5568; /* Gray-700 */
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: background-color 0.2s ease;
+        }
+        .button-secondary:hover {
+            background-color: #cbd5e0; /* Gray-300 */
+        }
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 24px;
+            border: 1px solid #888;
+            width: 90%; /* Responsive width */
+            max-width: 400px; /* Max width */
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .modal input[type="text"] {
+            width: calc(100% - 16px); /* Adjust for padding */
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+        }
+
+        /* Mobile specific styles (for screens up to 600px wide) */
+        @media(max-width: 600px) {
+            table {
+                width: 100%;
+            }
+            thead {
+                display: none; /* Hide the table headers */
+            }
+            tr {
+                display: flex; /* Make the row a flex container */
+                flex-direction: column; /* Stack the cells vertically */
+                margin-bottom: 16px;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                background-color: #ffffff;
+                padding: 12px;
+                box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            }
+            td {
+                display: flex; /* Make the cell a flex container */
+                justify-content: space-between; /* Space out the label and the content */
+                align-items: center; /* Vertically align items */
+                text-align: right;
+                padding: 8px 0; /* Adjust padding for a cleaner look */
+                border: none;
+                border-bottom: 1px solid #e2e8f0; /* Add a separator between cells */
+                white-space: normal;
+                overflow: visible;
+                text-overflow: clip;
+            }
+            td:last-child {
+                border-bottom: none; /* Remove border from the last cell */
+                justify-content: center; /* Center the action button */
+            }
+            td::before {
+                content: attr(data-label);
+                font-weight: bold;
+                text-align: left;
+                color: #4a5568;
+                flex-grow: 1; /* Allow the label to take up space */
+            }
+            td input, td select, td button {
+                width: auto;
+                max-width: 60%; /* Allow content to take up a reasonable amount of space */
+                text-align: right;
+            }
+            td button {
+                max-width: 100%;
+            }
+            .controls {
+                flex-direction: column;
+                gap: 8px;
+            }
+            .controls button,
+            .controls label,
+            .controls select,
+            .controls span {
+                width: 100%; /* Full width for control elements */
+                text-align: center;
+                margin: 0 !important;
+            }
+            .totals {
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+            .totals > div {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h2 class="text-3xl font-bold mb-4 text-gray-800">📘 Student Fee Tracker</h2>
+
+    <div class="controls">
+        <label for="monthSelect" class="block mb-2">Select Month:</label>
+        <select id="monthSelect" class="flex-grow"></select>
+        <button id="deleteMonthBtn" onclick="deleteSelectedMonth()" class="button-primary bg-red-500 hover:bg-red-600">❌ Delete Month</button>
+        <button onclick="saveData()" class="button-primary">💾 Save</button>
+        <button onclick="newMonth()" class="button-primary">➕ New Month</button>
+        <button onclick="exportCSV()" class="button-primary bg-green-500 hover:bg-green-600">📥 Export CSV</button>
+        <span id="currentMonthDisplay" class="font-bold text-gray-700"></span>
+    </div>
+
+    <div class="w-full max-w-4xl overflow-x-auto rounded-lg shadow-lg bg-white p-4">
+        <table id="feeTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Student's Name</th>
+                    <th>Class</th>
+                    <th>Advance Fee</th>
+                    <th>Fee Paid</th>
+                    <th>Joining Date</th>
+                    <th>Fixed Fee</th>
+                    <th>Payment Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+        <button onclick="addRow()" class="button-primary mt-4 w-full">➕ Add Student</button>
+    </div>
+
+    <div class="totals">
+        <div class="unpaid">Unpaid Total: <span id="unpaidTotal">0</span></div>
+        <div class="paid">Paid Total: <span id="paidTotal">0</span></div>
+    </div>
+
+    <div id="customModal" class="modal">
+        <div class="modal-content">
+            <p id="modalMessage" class="text-lg text-gray-800 mb-4"></p>
+            <input type="text" id="modalInput" class="hidden mb-4" placeholder="Enter month name...">
+            <div class="modal-buttons">
+                <button id="modalConfirmBtn" class="button-primary hidden">Confirm</button>
+                <button id="modalPromptBtn" class="button-primary hidden">Submit</button>
+                <button id="modalCancelBtn" class="button-secondary hidden">Cancel</button>
+                <button id="modalOkBtn" class="button-primary hidden">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get references to HTML elements
+        const monthSelect = document.getElementById("monthSelect");
+        const tableBody = document.getElementById("tableBody");
+        const currentMonthDisplay = document.getElementById("currentMonthDisplay");
+        const unpaidTotalDisplay = document.getElementById("unpaidTotal");
+        const paidTotalDisplay = document.getElementById("paidTotal");
+
+        // Modal elements
+        const customModal = document.getElementById("customModal");
+        const modalMessage = document.getElementById("modalMessage");
+        const modalInput = document.getElementById("modalInput");
+        const modalConfirmBtn = document.getElementById("modalConfirmBtn");
+        const modalPromptBtn = document.getElementById("modalPromptBtn");
+        const modalCancelBtn = document.getElementById("modalCancelBtn");
+        const modalOkBtn = document.getElementById("modalOkBtn");
+
+        let currentMonth = getCurrentMonth(); // Initialize current month
+
+        /**
+         * Returns the current month and year in a readable format (e.g., "August 2025").
+         * @returns {string} The current month and year.
+         */
+        function getCurrentMonth() {
+            const today = new Date();
+            return today.toLocaleString("default", { month: "long", year: "numeric" });
+        }
+
+        /**
+         * Displays a custom modal for alerts, confirms, or prompts.
+         * @param {string} message - The message to display.
+         * @param {string} type - The type of modal: 'alert', 'confirm', or 'prompt'.
+         * @param {string} [defaultValue=''] - Default value for prompt input.
+         * @returns {Promise<string|boolean>} A promise that resolves with true/false for confirm, or input value for prompt.
+         */
+        function showCustomModal(message, type = 'alert', defaultValue = '') {
+            return new Promise((resolve) => {
+                // Reset modal elements visibility
+                modalConfirmBtn.classList.add('hidden');
+                modalPromptBtn.classList.add('hidden');
+                modalCancelBtn.classList.add('hidden');
+                modalOkBtn.classList.add('hidden');
+                modalInput.classList.add('hidden');
+                modalInput.value = defaultValue; // Set default value for prompt
+
+                modalMessage.textContent = message;
+                customModal.style.display = 'flex'; // Show modal
+
+                const cleanup = () => {
+                    customModal.style.display = 'none'; // Hide modal
+                    // Remove all event listeners to prevent multiple bindings
+                    modalConfirmBtn.onclick = null;
+                    modalPromptBtn.onclick = null;
+                    modalCancelBtn.onclick = null;
+                    modalOkBtn.onclick = null;
+                };
+
+                if (type === 'confirm') {
+                    modalConfirmBtn.classList.remove('hidden');
+                    modalCancelBtn.classList.remove('hidden');
+                    modalConfirmBtn.onclick = () => { cleanup(); resolve(true); };
+                    modalCancelBtn.onclick = () => { cleanup(); resolve(false); };
+                } else if (type === 'prompt') {
+                    modalInput.classList.remove('hidden');
+                    modalPromptBtn.classList.remove('hidden');
+                    modalCancelBtn.classList.remove('hidden');
+                    modalPromptBtn.onclick = () => { cleanup(); resolve(modalInput.value); };
+                    modalCancelBtn.onclick = () => { cleanup(); resolve(null); }; // Resolve with null if cancelled
+                } else { // 'alert' type
+                    modalOkBtn.classList.remove('hidden');
+                    modalOkBtn.onclick = () => { cleanup(); resolve(true); };
+                }
+            });
+        }
+
+        /**
+         * Populates the month selection dropdown with months saved in localStorage.
+         * Ensures the current month is always present and sorted chronologically.
+         */
+        function populateMonths() {
+            monthSelect.innerHTML = "";
+            let months = JSON.parse(localStorage.getItem("monthList") || "[]");
+
+            // Add current month if it's not already in the list BEFORE sorting
+            if (!months.includes(currentMonth)) {
+                months.push(currentMonth);
+                localStorage.setItem("monthList", JSON.stringify(months));
+            }
+
+            // Custom sort for chronological order
+            months.sort((a, b) => {
+                // Convert "Month Year" string to a Date object for comparison
+                // Use a dummy day (1) to ensure valid date parsing
+                const dateA = new Date(a.replace(/(\w+) (\d{4})/, "$1 1, $2"));
+                const dateB = new Date(b.replace(/(\w+) (\d{4})/, "$1 1, $2"));
+                return dateA - dateB; // Sort by date difference
+            });
+
+            months.forEach(m => {
+                let opt = document.createElement("option");
+                opt.value = m;
+                opt.textContent = m;
+                monthSelect.appendChild(opt);
+            });
+
+            // Set selected month, ensuring it's valid
+            if (months.includes(currentMonth)) {
+                monthSelect.value = currentMonth;
+            } else if (months.length > 0) {
+                monthSelect.value = months[0]; // Fallback to the first month if currentMonth is not found
+                currentMonth = months[0];
+            } else {
+                // No months exist, reset to current calendar month
+                currentMonth = getCurrentMonth();
+                saveMonthList(currentMonth); // Add it to the list
+                populateMonths(); // Re-run to add and select it
+                return;
+            }
+            updateMonthDisplay(); // Update display to show current month
+        }
+
+        /**
+         * Updates the display area to show the currently selected month.
+         */
+        function updateMonthDisplay() {
+            currentMonthDisplay.textContent = `Month: ${currentMonth}`;
+        }
+
+        /**
+         * Adds a new month to the month list in localStorage if it's not already present.
+         * @param {string} newMonth - The name of the new month to add.
+         */
+        function saveMonthList(newMonth) {
+            let months = JSON.parse(localStorage.getItem("monthList") || "[]");
+            if (!months.includes(newMonth)) {
+                months.push(newMonth);
+                localStorage.setItem("monthList", JSON.stringify(months));
+            }
+        }
+
+        /**
+         * Adds a new student row to the table. Populates with provided data or empty fields.
+         * @param {object} data - Optional student data to pre-fill the row.
+         */
+        function addRow(data = {}) {
+            let row = document.createElement("tr");
+            row.innerHTML = `
+                <td data-label="#"></td>
+                <td data-label="Student's Name"><input type="text" class="w-full" value="${data.name || ''}" placeholder="Name"></td>
+                <td data-label="Class"><input type="text" class="w-full" value="${data.class || ''}" placeholder="Class"></td>
+                <td data-label="Advance Fee">
+                    <select class="w-full">
+                        <option value="No" ${data.advance === "No" ? "selected" : ""}>No</option>
+                        <option value="Yes" ${data.advance === "Yes" ? "selected" : ""}>Yes</option>
+                    </select>
+                </td>
+                <td data-label="Fee Paid">
+                    <select class="w-full" onchange="handleFeePaidChange(this)">
+                        <option value="No" ${data.paid === "No" ? "selected" : ""}>No</option>
+                        <option value="Yes" ${data.paid === "Yes" ? "selected" : ""}>Yes</option>
+                    </select>
+                </td>
+                <td data-label="Joining Date"><input type="date" class="w-full" value="${data.joinDate || ''}"></td>
+                <td data-label="Fixed Fee"><input type="number" class="w-full" value="${data.fixedFee || ''}" oninput="updateTotals()" placeholder="Fee"></td>
+                <td data-label="Payment Date"><input type="date" class="w-full" value="${data.paymentDate || ''}" readonly></td>
+                <td data-label="Action"><button class="delBtn" onclick="deleteRow(this)">❌ Delete</button></td>
+            `;
+            tableBody.appendChild(row);
+            updateSerialNumbers(); // Re-index rows after adding
+            updateTotals(); // Recalculate totals
+            highlightTodayPayments(); // Highlight if payment date is today
+        }
+
+        /**
+         * Updates the serial numbers (#) in the first column of the table.
+         */
+        function updateSerialNumbers() {
+            tableBody.querySelectorAll("tr").forEach((r, i) => r.children[0].textContent = i + 1);
+        }
+
+        /**
+         * Handles the change event for the "Fee Paid" dropdown.
+         * Sets the "Payment Date" to today's date if "Yes" is selected.
+         * @param {HTMLSelectElement} select - The select element that triggered the change.
+         */
+        function handleFeePaidChange(select) {
+            const row = select.closest("tr"); // Find the closest parent row
+            // Find the payment date input within this row
+            const paymentCell = row.querySelector('td[data-label="Payment Date"] input[type="date"]');
+            if (select.value === "Yes") {
+                paymentCell.value = new Date().toISOString().split("T")[0]; // Set to current date
+            } else {
+                paymentCell.value = ""; // Clear date if fee is unpaid
+            }
+            updateTotals(); // Recalculate totals after status change
+            highlightTodayPayments(); // Re-highlight payments
+        }
+
+        /**
+         * Deletes a student row from the table.
+         * @param {HTMLButtonElement} btn - The delete button that was clicked.
+         */
+        function deleteRow(btn) {
+            btn.closest("tr").remove(); // Remove the parent row
+            updateSerialNumbers(); // Re-index rows after deletion
+            updateTotals(); // Recalculate totals
+        }
+
+        /**
+         * Saves the current table data for the current month to localStorage.
+         * Displays a custom alert upon successful save.
+         */
+        async function saveData() {
+            let rows = tableBody.querySelectorAll("tr");
+            let data = [];
+            rows.forEach(r => {
+                // Query all relevant input/select elements within the row
+                let nameInput = r.querySelector('td[data-label="Student\'s Name"] input');
+                let classInput = r.querySelector('td[data-label="Class"] input');
+                let advanceSelect = r.querySelector('td[data-label="Advance Fee"] select');
+                let paidSelect = r.querySelector('td[data-label="Fee Paid"] select');
+                let joinDateInput = r.querySelector('td[data-label="Joining Date"] input');
+                let fixedFeeInput = r.querySelector('td[data-label="Fixed Fee"] input');
+                let paymentDateInput = r.querySelector('td[data-label="Payment Date"] input');
+
+                data.push({
+                    name: nameInput ? nameInput.value : '',
+                    class: classInput ? classInput.value : '',
+                    advance: advanceSelect ? advanceSelect.value : '',
+                    paid: paidSelect ? paidSelect.value : '',
+                    joinDate: joinDateInput ? joinDateInput.value : '',
+                    fixedFee: fixedFeeInput ? fixedFeeInput.value : '',
+                    paymentDate: paymentDateInput ? paymentDateInput.value : ''
+                });
+            });
+            localStorage.setItem("studentFee_" + currentMonth, JSON.stringify(data));
+            populateMonths(); // Re-populate months to ensure the current month is in dropdown
+            updateTotals(); // Update totals
+            await showCustomModal("Data saved successfully for " + currentMonth, 'alert');
+        }
+
+        /**
+         * Loads student data for a specified month from localStorage and populates the table.
+         * If no data is found, a new empty row is added.
+         * @param {string} month - The month for which to load data.
+         */
+        function loadData(month) {
+            tableBody.innerHTML = ""; // Clear existing rows
+            currentMonth = month; // Set the current month
+            updateMonthDisplay(); // Update display
+            let saved = JSON.parse(localStorage.getItem("studentFee_" + month) || "[]");
+            if (saved.length) {
+                saved.forEach(s => addRow(s)); // Add rows with loaded data
+            } else {
+                addRow(); // Add a single empty row if no data
+            }
+            updateSerialNumbers(); // Ensure serial numbers are correct after loading
+            updateTotals(); // Update totals after loading
+            highlightTodayPayments(); // Highlight payments for loaded data
+        }
+
+        /**
+         * Initiates the process for adding a new month.
+         * Prompts the user for a new month name and transfers relevant data.
+         */
+        async function newMonth() {
+            // 1. Save current month's data first (before switching to new month)
+            await saveData();
+
+            // 2. Prompt for new month name
+            const newMonthName = await showCustomModal("Enter new month name (e.g., September 2025):", 'prompt');
+            if (!newMonthName) { // If user cancels or enters empty name
+                // Re-load the original month's data since the action was cancelled
+                loadData(monthSelect.value); // Use monthSelect.value to ensure we load the currently selected month
+                return;
+            }
+
+            // 3. Retrieve the data from the month that was just saved (the "previous" month)
+            // It's important to use the `currentMonth` as it was *before* it was updated to `newMonthName`.
+            // The `saveData()` call above already saved it under the old `currentMonth` key.
+            let lastMonthData = JSON.parse(localStorage.getItem("studentFee_" + currentMonth) || "[]");
+
+            // 4. Update currentMonth to the new name and add it to the month list
+            currentMonth = newMonthName;
+            saveMonthList(currentMonth);
+
+            // 5. Clear table for new month's data
+            tableBody.innerHTML = "";
+
+            // 6. Populate the table with students from the last month, resetting fee status
+            if (lastMonthData.length) {
+                lastMonthData.forEach(student => addRow({
+                    name: student.name,
+                    class: student.class,
+                    joinDate: student.joinDate,
+                    fixedFee: student.fixedFee,
+                    advance: student.advance, // Keep advance status
+                    paid: "No", // Reset fee paid status for the new month
+                    paymentDate: "" // Clear payment date
+                }));
+            } else {
+                addRow(); // Add an empty row if no students were in the previous month
+            }
+
+            // 7. CRITICAL FIX: Explicitly save the data for the *new* month after copying students
+            // This will save the students that were just added to the tableBody under the newMonthName key
+            await saveData();
+
+            // 8. Update UI elements
+            populateMonths(); // Re-populate the dropdown with the new month and sorted
+            updateMonthDisplay();
+            updateSerialNumbers();
+            updateTotals();
+            highlightTodayPayments();
+        }
+
+        /**
+         * Clears all data for the current month from localStorage.
+         * Prompts for confirmation before clearing.
+         * The `clearMonth` function is now DEPRECATED. The new `deleteSelectedMonth` function is used instead.
+         */
+        async function clearMonth() {
+            const confirmed = await showCustomModal(`Are you sure you want to delete all data for ${currentMonth}? This action cannot be undone.`, 'confirm');
+            if (confirmed) {
+                localStorage.removeItem("studentFee_" + currentMonth);
+                // Remove the month from the month list as well
+                let months = JSON.parse(localStorage.getItem("monthList") || "[]");
+                months = months.filter(m => m !== currentMonth);
+                localStorage.setItem("monthList", JSON.stringify(months));
+
+                populateMonths(); // Re-populate to reflect removal
+                // If there are still months, load the first one, otherwise reset to current month
+                if (monthSelect.options.length > 0) {
+                    currentMonth = monthSelect.value;
+                } else {
+                    currentMonth = getCurrentMonth();
+                    saveMonthList(currentMonth); // Ensure current month is added if list is empty
+                }
+                loadData(currentMonth); // Load data for the new current month (or default)
+                await showCustomModal(`Data for ${currentMonth} has been cleared.`, 'alert');
+            }
+        }
+
+        /**
+         * New function to handle deleting the currently selected month.
+         * Asks for confirmation before deleting.
+         */
+        async function deleteSelectedMonth() {
+            const monthToDelete = monthSelect.value;
+            const confirmed = await showCustomModal(`Are you sure you want to delete the month: ${monthToDelete}? This will permanently remove all student data for this month.`, 'confirm');
+            if (confirmed) {
+                // Remove the data associated with the selected month
+                localStorage.removeItem("studentFee_" + monthToDelete);
+
+                // Remove the month from the month list
+                let months = JSON.parse(localStorage.getItem("monthList") || "[]");
+                months = months.filter(m => m !== monthToDelete);
+                localStorage.setItem("monthList", JSON.stringify(months));
+
+                // If the deleted month was the currently loaded one, switch to another month
+                if (currentMonth === monthToDelete) {
+                    // Load the first available month, or a new month if the list is empty
+                    if (months.length > 0) {
+                        currentMonth = months[0];
+                    } else {
+                        currentMonth = getCurrentMonth();
+                        saveMonthList(currentMonth); // Add it to the list
+                    }
+                }
+
+                // Update the UI
+                populateMonths();
+                loadData(currentMonth);
+                await showCustomModal(`The month '${monthToDelete}' has been successfully deleted.`, 'alert');
+            }
+        }
+
+        /**
+         * Exports the current table data to a CSV file.
+         * Displays an alert if there's no data to export.
+         */
+        async function exportCSV() {
+            let rows = tableBody.querySelectorAll("tr");
+            if (!rows.length) {
+                await showCustomModal("No data to export!", 'alert');
+                return;
+            }
+            let csv = "#,Student's Name,Class,Advance Fee,Fee Paid,Joining Date,Fixed Fee,Payment Date\n";
+            rows.forEach((r, i) => {
+                // Get values from the inputs/selects within each row's specific data-label td
+                let name = r.querySelector('td[data-label="Student\'s Name"] input')?.value || '';
+                let studentClass = r.querySelector('td[data-label="Class"] input')?.value || '';
+                let advance = r.querySelector('td[data-label="Advance Fee"] select')?.value || '';
+                let paid = r.querySelector('td[data-label="Fee Paid"] select')?.value || '';
+                let joinDate = r.querySelector('td[data-label="Joining Date"] input')?.value || '';
+                let fixedFee = r.querySelector('td[data-label="Fixed Fee"] input')?.value || '';
+                let paymentDate = r.querySelector('td[data-label="Payment Date"] input')?.value || '';
+
+                // Escape commas within data fields if necessary (basic CSV handling)
+                const escapeCSV = (text) => `"${text.replace(/"/g, '""')}"`;
+
+                csv += [
+                    i + 1,
+                    escapeCSV(name),
+                    escapeCSV(studentClass),
+                    escapeCSV(advance),
+                    escapeCSV(paid),
+                    escapeCSV(joinDate),
+                    escapeCSV(fixedFee),
+                    escapeCSV(paymentDate)
+                ].join(",") + "\n";
+            });
+            let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `student_fees_${currentMonth}.csv`;
+            document.body.appendChild(link); // Append to body to make it clickable
+            link.click();
+            document.body.removeChild(link); // Clean up
+        }
+
+        /**
+         * Calculates and updates the total paid and unpaid fees displayed.
+         */
+        function updateTotals() {
+            let totalFixedFee = 0;
+            let totalPaid = 0;
+            tableBody.querySelectorAll("tr").forEach(row => {
+                const fixedFeeInput = row.querySelector('td[data-label="Fixed Fee"] input');
+                const paidSelect = row.querySelector('td[data-label="Fee Paid"] select');
+
+                const fixedFee = parseFloat(fixedFeeInput.value) || 0;
+                totalFixedFee += fixedFee;
+
+                if (paidSelect.value === "Yes") {
+                    totalPaid += fixedFee;
+                }
+            });
+
+            const totalUnpaid = totalFixedFee - totalPaid;
+            unpaidTotalDisplay.textContent = totalUnpaid.toFixed(2);
+            paidTotalDisplay.textContent = totalPaid.toFixed(2);
+        }
+
+        /**
+         * Highlights rows where the payment date is today.
+         */
+        function highlightTodayPayments() {
+            const today = new Date().toISOString().split('T')[0];
+            tableBody.querySelectorAll("tr").forEach(row => {
+                const paymentDateInput = row.querySelector('td[data-label="Payment Date"] input');
+                if (paymentDateInput && paymentDateInput.value === today) {
+                    row.style.backgroundColor = '#dcfce7'; /* Green-100 */
+                } else {
+                    row.style.backgroundColor = ''; /* Reset background color */
+                }
+            });
+        }
+
+        // Event listener for month selection change
+        monthSelect.addEventListener("change", (e) => loadData(e.target.value));
+
+        // Initial setup on page load
+        document.addEventListener("DOMContentLoaded", () => {
+            populateMonths();
+            loadData(currentMonth);
+        });
+
+    </script>
+</body>
+</html>
