@@ -12,10 +12,10 @@
   th:first-child, td:first-child { width: 30px; }
   th:nth-child(2), td:nth-child(2) { width: 140px; text-align: left; }
   th:nth-child(3), td:nth-child(3) { width: 50px; }
-  th:nth-child(4), td:nth-child(4) { width: 60px; } /* a bit tighter */
-  th:nth-child(5), td:nth-child(5) { width: 60px; } /* a bit tighter */
+  th:nth-child(4), td:nth-child(4) { width: 60px; }
+  th:nth-child(5), td:nth-child(5) { width: 60px; }
   th:nth-child(6), td:nth-child(6) { width: 90px; }
-  th:nth-child(7), td:nth-child(7) { width: 70px; } /* fits 4 digits nicely */
+  th:nth-child(7), td:nth-child(7) { width: 70px; }
   th:nth-child(8), td:nth-child(8) { width: 95px; }
   th:nth-child(9), td:nth-child(9) { width: 50px; }
   th { background: #f2f2f2; font-size: 13px; }
@@ -26,8 +26,6 @@
   .paid { color: green; }
   .unpaid { color: red; }
   .delBtn { background: red; color: white; border: none; padding: 2px 6px; cursor: pointer; border-radius: 4px; font-size: 12px; }
-
-  /* Visual cue on Fee Paid select */
   .paidSelect.yes { background: #e8f5e9; color: #1b5e20; }
   .paidSelect.no  { background: #ffebee; color: #b71c1c; }
 
@@ -48,9 +46,16 @@
   <select id="monthSelect"></select>
   <button onclick="saveData()">💾 Save</button>
   <button onclick="newMonth()">➕ New Month</button>
-  <button onclick="clearMonth()">🗑️ Clear Month</button>
+  <button onclick="deleteMonth()">🗑️ Delete Month</button>
   <button onclick="exportCSV()">📥 Export CSV</button>
   <span id="currentMonthDisplay" style="margin-left:10px;font-weight:bold;"></span>
+</div>
+
+<div id="deleteWarning" style="display:none; color:red; font-weight:bold; margin-top:5px; text-align:center;">
+  ⚠️ Deleting this month will permanently remove all its data!
+</div>
+<div id="deleteSuccess" style="display:none; color:green; font-weight:bold; margin-top:5px; text-align:center;">
+  ✅ Month deleted successfully!
 </div>
 
 <table id="feeTable">
@@ -72,55 +77,49 @@
 <button onclick="addRow()">➕ Add Student</button>
 
 <div class="totals">
-  <div class="unpaid">Unpaid Total: <span id="unpaidTotal">0</span></div>
-  <div class="paid">Paid Total: <span id="paidTotal">0</span></div>
+  <div class="unpaid">Unpaid Total: Rs <span id="unpaidTotal">0</span></div>
+  <div class="paid">Paid Total: Rs <span id="paidTotal">0</span></div>
 </div>
 
 <script>
-/* ---------- Helpers ---------- */
 const monthSelect = document.getElementById("monthSelect");
 const tableBody = document.getElementById("tableBody");
 const currentMonthDisplay = document.getElementById("currentMonthDisplay");
 let currentMonth = getCurrentMonth();
 
-/* Local-date YYYY-MM-DD (avoids UTC shift problems) */
 function todayLocalISO() {
   const d = new Date();
   const tzOff = d.getTimezoneOffset();
   const local = new Date(d.getTime() - tzOff * 60000);
   return local.toISOString().split("T")[0];
 }
-
 function getCurrentMonth() {
   const today = new Date();
   return today.toLocaleString("default", { month: "long", year: "numeric" });
 }
+function getNextMonthName() {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 1);
+  return d.toLocaleString("default", { month: "long", year: "numeric" });
+}
 
-/* ---------- Months ---------- */
 function populateMonths() {
   monthSelect.innerHTML = "";
   let months = JSON.parse(localStorage.getItem("monthList") || "[]");
-
   if (!months.includes(currentMonth)) {
     months.push(currentMonth);
     localStorage.setItem("monthList", JSON.stringify(months));
   }
-
   months.forEach(m => {
     const opt = document.createElement("option");
     opt.value = m;
     opt.textContent = m;
     monthSelect.appendChild(opt);
   });
-
   monthSelect.value = currentMonth;
   updateMonthDisplay();
 }
-
-function updateMonthDisplay() {
-  currentMonthDisplay.textContent = currentMonth;
-}
-
+function updateMonthDisplay() { currentMonthDisplay.textContent = currentMonth; }
 function saveMonthList(newMonth) {
   let months = JSON.parse(localStorage.getItem("monthList") || "[]");
   if (!months.includes(newMonth)) {
@@ -129,7 +128,6 @@ function saveMonthList(newMonth) {
   }
 }
 
-/* ---------- Rows ---------- */
 function addRow(data = {}) {
   const row = document.createElement("tr");
   row.innerHTML = `
@@ -159,59 +157,47 @@ function addRow(data = {}) {
   updateTotals();
   highlightTodayPayments();
 }
-
 function updateSerialNumbers() {
   tableBody.querySelectorAll("tr").forEach((r, i) => r.children[0].textContent = i + 1);
 }
-
-/* ---------- Interactions ---------- */
 function handleFeePaidChange(select) {
   const row = select.closest("tr");
   const paymentCell = row.querySelectorAll("input[type=date]")[1];
-  if (select.value === "Yes") {
-    paymentCell.value = todayLocalISO(); // local date (fixes UTC issue)
-  } else {
-    paymentCell.value = "";
-  }
+  if (select.value === "Yes") paymentCell.value = todayLocalISO();
+  else paymentCell.value = "";
   refreshPaidSelectStyle(row);
   updateTotals();
   highlightTodayPayments();
 }
-
 function refreshPaidSelectStyle(row) {
   const sel = row.querySelector(".paidSelect");
   sel.classList.remove("yes", "no");
   sel.classList.add(sel.value === "Yes" ? "yes" : "no");
 }
+function deleteRow(btn) { btn.closest("tr").remove(); updateSerialNumbers(); updateTotals(); }
 
-function deleteRow(btn) {
-  btn.closest("tr").remove();
-  updateSerialNumbers();
-  updateTotals();
-}
-
-/* ---------- Save / Load ---------- */
 function saveData() {
   const rows = tableBody.querySelectorAll("tr");
   const data = [];
   rows.forEach(r => {
     const inputs = r.querySelectorAll("input, select");
-    data.push({
-      name: inputs[0].value,
-      class: inputs[1].value,
-      advance: inputs[2].value,
-      paid: inputs[3].value,
-      joinDate: inputs[4].value,
-      fixedFee: inputs[5].value,
-      paymentDate: inputs[6].value
-    });
+    if (inputs[0].value.trim() || inputs[5].value.trim()) { // skip empty row
+      data.push({
+        name: inputs[0].value,
+        class: inputs[1].value,
+        advance: inputs[2].value,
+        paid: inputs[3].value,
+        joinDate: inputs[4].value,
+        fixedFee: inputs[5].value,
+        paymentDate: inputs[6].value
+      });
+    }
   });
   localStorage.setItem("studentFee_" + currentMonth, JSON.stringify(data));
   populateMonths();
   updateTotals();
   alert("Data saved for " + currentMonth);
 }
-
 function loadData(month) {
   tableBody.innerHTML = "";
   currentMonth = month;
@@ -221,19 +207,15 @@ function loadData(month) {
   else addRow();
 }
 
-/* ---------- Months actions ---------- */
 function newMonth() {
-  const newMonthName = prompt("Enter new month name (e.g., August 2025):", "");
+  const suggested = getNextMonthName();
+  const newMonthName = prompt("Enter new month name:", suggested);
   if (!newMonthName) return;
-
-  saveData(); // save current month first
+  saveData();
   const lastMonthData = JSON.parse(localStorage.getItem("studentFee_" + currentMonth) || "[]");
-
   currentMonth = newMonthName;
   saveMonthList(currentMonth);
-
   tableBody.innerHTML = "";
-
   if (lastMonthData.length) {
     lastMonthData.forEach(student => addRow({
       name: student.name,
@@ -244,29 +226,43 @@ function newMonth() {
       paid: "No",
       paymentDate: ""
     }));
-  } else {
-    addRow();
-  }
-
+  } else addRow();
   populateMonths();
   updateMonthDisplay();
 }
-
-function clearMonth() {
-  if (confirm("Delete all data for " + currentMonth + "?")) {
+function deleteMonth() {
+  const warning = document.getElementById("deleteWarning");
+  const success = document.getElementById("deleteSuccess");
+  warning.style.display = "block";
+  if (!currentMonth) return;
+  if (confirm("Permanently delete " + currentMonth + " and all its data?")) {
     localStorage.removeItem("studentFee_" + currentMonth);
-    loadData(currentMonth); // keep month but clear rows
+    let months = JSON.parse(localStorage.getItem("monthList") || "[]");
+    months = months.filter(m => m !== currentMonth);
+    localStorage.setItem("monthList", JSON.stringify(months));
+    if (months.length) {
+      currentMonth = months[months.length - 1]; // jump to latest
+      populateMonths();
+      loadData(currentMonth);
+    } else {
+      localStorage.removeItem("monthList");
+      tableBody.innerHTML = "";
+      currentMonth = getCurrentMonth();
+      saveMonthList(currentMonth);
+      populateMonths();
+      loadData(currentMonth);
+    }
+    warning.style.display = "none";
+    success.style.display = "block";
+    setTimeout(() => success.style.display = "none", 3000);
   }
 }
 
-/* ---------- Export ---------- */
 function exportCSV() {
   const rows = tableBody.querySelectorAll("tr");
   if (!rows.length) { alert("No data!"); return; }
-
   const esc = v => `"${String(v).replace(/"/g, '""')}"`;
   let csv = '#,"Student\'s Name",Class,"Advance Fee","Fee Paid","Joining Date","Fixed Fee","Payment Date"\n';
-
   rows.forEach((r, i) => {
     const inputs = r.querySelectorAll("input, select");
     const line = [
@@ -281,7 +277,6 @@ function exportCSV() {
     ].join(",");
     csv += line + "\n";
   });
-
   const blob = new Blob([csv], { type: "text/csv" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -289,7 +284,6 @@ function exportCSV() {
   link.click();
 }
 
-/* ---------- Totals & Highlights ---------- */
 function updateTotals() {
   let paid = 0, unpaid = 0;
   tableBody.querySelectorAll("tr").forEach(r => {
@@ -304,16 +298,16 @@ function updateTotals() {
   document.getElementById("paidTotal").textContent = paid;
   document.getElementById("unpaidTotal").textContent = unpaid;
 }
-
 function highlightTodayPayments() {
-  const today = todayLocalISO(); // local date
+  const today = todayLocalISO();
   tableBody.querySelectorAll("tr").forEach(r => {
     const cell = r.querySelectorAll('input[type="date"]')[1];
-    cell.style.backgroundColor = (cell.value === today) ? "#fff3b0" : "";
+    if (!cell.value) cell.style.backgroundColor = "";
+    else if (cell.value === today) cell.style.backgroundColor = "#fff3b0"; // yellow if today
+    else cell.style.backgroundColor = "#d9fdd3"; // green if older paid
   });
 }
 
-/* ---------- Init ---------- */
 monthSelect.addEventListener("change", () => loadData(monthSelect.value));
 populateMonths();
 loadData(currentMonth);
