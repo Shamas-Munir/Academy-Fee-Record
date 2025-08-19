@@ -1,86 +1,74 @@
-v<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student Fee Dashboard</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Student Fee Tracker</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 10px; background: #f0f2f5; color: #333; }
-  h2 { text-align: center; font-size: 24px; margin-bottom: 15px; }
-  
-  .controls { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 10px; }
-  input, select, button { font-size: 14px; padding: 6px; border-radius: 5px; border: 1px solid #ccc; }
-  button { cursor: pointer; background: #3498db; color: white; border: none; transition: 0.2s; }
-  button:hover { opacity: 0.85; }
+  body { font-family: Arial, sans-serif; margin: 10px; }
+  h2 { text-align: center; font-size: 18px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; table-layout: fixed; }
+  th, td { border: 1px solid #ccc; padding: 2px 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  th:first-child, td:first-child { width: 30px; }
+  th:nth-child(2), td:nth-child(2) { width: 140px; text-align: left; }
+  th:nth-child(3), td:nth-child(3) { width: 50px; }
+  th:nth-child(4), td:nth-child(4) { width: 60px; } /* a bit tighter */
+  th:nth-child(5), td:nth-child(5) { width: 60px; } /* a bit tighter */
+  th:nth-child(6), td:nth-child(6) { width: 90px; }
+  th:nth-child(7), td:nth-child(7) { width: 70px; } /* fits 4 digits nicely */
+  th:nth-child(8), td:nth-child(8) { width: 95px; }
+  th:nth-child(9), td:nth-child(9) { width: 50px; }
+  th { background: #f2f2f2; font-size: 13px; }
+  input, select, button { font-size: 12px; padding: 2px 3px; }
+  input[type="number"] { text-align: right; }
+  .controls { margin: 8px 0; display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; font-size: 12px; }
+  .totals { margin-top: 10px; display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; }
+  .paid { color: green; }
+  .unpaid { color: red; }
+  .delBtn { background: red; color: white; border: none; padding: 2px 6px; cursor: pointer; border-radius: 4px; font-size: 12px; }
 
-  .totals { margin-top: 15px; display: flex; justify-content: space-between; font-weight: bold; flex-wrap: wrap; }
-  .totals .paid { color: green; }
-  .totals .unpaid { color: red; }
+  /* Visual cue on Fee Paid select */
+  .paidSelect.yes { background: #e8f5e9; color: #1b5e20; }
+  .paidSelect.no  { background: #ffebee; color: #b71c1c; }
 
-  .table-container { overflow-x: auto; max-width: 100%; margin-bottom: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 8px; }
-  table { border-collapse: collapse; width: 100%; font-size: 14px; background: white; border-radius: 8px; overflow: hidden; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: center; white-space: nowrap; }
-  th { background: #f2f2f2; position: sticky; top: 0; z-index: 1; cursor: pointer; }
-  tbody tr:nth-child(even) { background: #f9f9f9; }
-  tbody tr:hover { background: #e8f0fe; }
-
-  .badge { padding: 2px 6px; border-radius: 4px; color: white; font-weight: bold; font-size: 12px; margin-left: 4px; }
-  .paid-badge { background: green; }
-  .unpaid-badge { background: red; }
-  .advance-yes { background: #3498db; }
-  .advance-no { background: gray; }
-
-  td.paid-cell { background-color: #d4f8d4; }
-  td.unpaid-cell { background-color: #f8d4d4; }
-  td.advance-yes-cell { background-color: #d0e7ff; }
-  td.advance-no-cell { background-color: #e0e0e0; }
-  td.today { background-color: #fff3b0 !important; }
-
-  @media (max-width: 500px) {
+  @media (max-width: 600px) {
     table, thead, tbody, th, td, tr { display: block; }
-    th { display: none; }
-    td { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #ccc; }
-    td::before { content: attr(data-label); font-weight: bold; }
-    .controls { flex-direction: column; gap: 5px; }
-    .totals { flex-direction: column; gap: 5px; }
-    input, select, button { font-size: 16px; padding: 8px; }
-    .delBtn { padding: 6px 10px; }
+    thead tr { display: none; }
+    tr { margin-bottom: 10px; border-bottom: 2px solid #ccc; }
+    td { text-align: right; padding-left: 50%; position: relative; }
+    td::before { content: attr(data-label); position: absolute; left: 5px; width: 45%; text-align: left; font-weight: bold; }
   }
 </style>
 </head>
 <body>
-
-<h2>📘 Student Fee Dashboard</h2>
+<h2>📘 Student Fee Tracker</h2>
 
 <div class="controls">
-  <label for="monthSelect">Month:</label>
+  <label for="monthSelect">Select Month:</label>
   <select id="monthSelect"></select>
   <button onclick="saveData()">💾 Save</button>
   <button onclick="newMonth()">➕ New Month</button>
   <button onclick="clearMonth()">🗑️ Clear Month</button>
   <button onclick="exportCSV()">📥 Export CSV</button>
-  <input type="text" id="searchInput" placeholder="Search Name or Class" oninput="filterRows()">
+  <span id="currentMonthDisplay" style="margin-left:10px;font-weight:bold;"></span>
 </div>
 
-<div class="table-container">
-  <table id="feeTable">
-    <thead>
-      <tr>
-        <th onclick="sortTable(0)">No.</th>
-        <th onclick="sortTable(1)">Student's Name</th>
-        <th onclick="sortTable(2)">Class</th>
-        <th onclick="sortTable(3)">Joining Date</th>
-        <th onclick="sortTable(4)">Fixed Fee</th>
-        <th onclick="sortTable(5)">Advance Fee</th>
-        <th onclick="sortTable(6)">Fee Paid</th>
-        <th onclick="sortTable(7)">Payment Date</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
-</div>
-
+<table id="feeTable">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Student's Name</th>
+      <th>Class</th>
+      <th>Advance Fee</th>
+      <th>Fee Paid</th>
+      <th>Joining Date</th>
+      <th>Fixed Fee</th>
+      <th>Payment Date</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody id="tableBody"></tbody>
+</table>
 <button onclick="addRow()">➕ Add Student</button>
 
 <div class="totals">
@@ -89,220 +77,246 @@ v<!DOCTYPE html>
 </div>
 
 <script>
+/* ---------- Helpers ---------- */
 const monthSelect = document.getElementById("monthSelect");
 const tableBody = document.getElementById("tableBody");
-const searchInput = document.getElementById("searchInput");
+const currentMonthDisplay = document.getElementById("currentMonthDisplay");
 let currentMonth = getCurrentMonth();
+
+/* Local-date YYYY-MM-DD (avoids UTC shift problems) */
+function todayLocalISO() {
+  const d = new Date();
+  const tzOff = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - tzOff * 60000);
+  return local.toISOString().split("T")[0];
+}
 
 function getCurrentMonth() {
   const today = new Date();
   return today.toLocaleString("default", { month: "long", year: "numeric" });
 }
 
+/* ---------- Months ---------- */
 function populateMonths() {
   monthSelect.innerHTML = "";
-  let keys = Object.keys(localStorage).filter(k => k.startsWith("studentFee_"));
-  keys.forEach(k => {
-    let month = k.replace("studentFee_", "");
-    let opt = document.createElement("option");
-    opt.value = month;
-    opt.textContent = month;
+  let months = JSON.parse(localStorage.getItem("monthList") || "[]");
+
+  if (!months.includes(currentMonth)) {
+    months.push(currentMonth);
+    localStorage.setItem("monthList", JSON.stringify(months));
+  }
+
+  months.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m;
+    opt.textContent = m;
     monthSelect.appendChild(opt);
   });
-  if (!keys.includes("studentFee_" + currentMonth)) {
-    let opt = document.createElement("option");
-    opt.value = currentMonth;
-    opt.textContent = currentMonth;
-    monthSelect.appendChild(opt);
-  }
+
   monthSelect.value = currentMonth;
+  updateMonthDisplay();
 }
 
+function updateMonthDisplay() {
+  currentMonthDisplay.textContent = currentMonth;
+}
+
+function saveMonthList(newMonth) {
+  let months = JSON.parse(localStorage.getItem("monthList") || "[]");
+  if (!months.includes(newMonth)) {
+    months.push(newMonth);
+    localStorage.setItem("monthList", JSON.stringify(months));
+  }
+}
+
+/* ---------- Rows ---------- */
 function addRow(data = {}) {
-  let row = document.createElement("tr");
+  const row = document.createElement("tr");
   row.innerHTML = `
-    <td data-label="No."></td>
-    <td data-label="Student's Name"><input type="text" value="${data.name || ""}"></td>
-    <td data-label="Class"><input type="text" value="${data.class || ""}"></td>
-    <td data-label="Joining Date"><input type="date" value="${data.joinDate || ""}"></td>
-    <td data-label="Fixed Fee"><input type="number" value="${data.fixedFee || ""}" min="0" oninput="updateTotals()"></td>
-    <td data-label="Advance Fee" onclick="toggleCell(this)"><span class="cell-text">${data.advance || "No"}</span></td>
-    <td data-label="Fee Paid" onclick="toggleCell(this)"><span class="cell-text">${data.paid || "No"}</span></td>
-    <td data-label="Payment Date"><input type="date" value="${data.paymentDate || ""}" readonly></td>
+    <td data-label="#"> </td>
+    <td data-label="Student's Name"><input type="text" value="${data.name || ''}" placeholder="Full name"></td>
+    <td data-label="Class"><input type="text" value="${data.class || ''}" placeholder="e.g., 8th"></td>
+    <td data-label="Advance Fee">
+      <select>
+        <option ${data.advance === "No" ? "selected" : ""}>No</option>
+        <option ${data.advance === "Yes" ? "selected" : ""}>Yes</option>
+      </select>
+    </td>
+    <td data-label="Fee Paid">
+      <select class="paidSelect" onchange="handleFeePaidChange(this)">
+        <option ${data.paid === "No" ? "selected" : ""}>No</option>
+        <option ${data.paid === "Yes" ? "selected" : ""}>Yes</option>
+      </select>
+    </td>
+    <td data-label="Joining Date"><input type="date" value="${data.joinDate || ''}"></td>
+    <td data-label="Fixed Fee"><input type="number" inputmode="numeric" min="0" value="${data.fixedFee || ''}" oninput="updateTotals()"></td>
+    <td data-label="Payment Date"><input type="date" value="${data.paymentDate || ''}" readonly></td>
     <td data-label="Action"><button class="delBtn" onclick="deleteRow(this)">❌</button></td>
   `;
   tableBody.appendChild(row);
-  updateRowNumbers();
-  updateCellColors(row);
+  updateSerialNumbers();
+  refreshPaidSelectStyle(row);
   updateTotals();
   highlightTodayPayments();
-  filterRows();
 }
 
-function updateRowNumbers() {
-  tableBody.querySelectorAll("tr").forEach((row, index) => row.cells[0].textContent = index + 1);
+function updateSerialNumbers() {
+  tableBody.querySelectorAll("tr").forEach((r, i) => r.children[0].textContent = i + 1);
 }
 
-function toggleCell(td) {
-  const span = td.querySelector(".cell-text");
-  let value = span.textContent;
-  if(td.dataset.label === "Fee Paid"){
-    value = value === "Yes" ? "No" : "Yes";
-    span.textContent = value;
-    td.parentElement.cells[7].querySelector("input").value = value==="Yes"? new Date().toISOString().split("T")[0] : "";
-  } else if(td.dataset.label === "Advance Fee"){
-    value = value === "Yes" ? "No" : "Yes";
-    span.textContent = value;
+/* ---------- Interactions ---------- */
+function handleFeePaidChange(select) {
+  const row = select.closest("tr");
+  const paymentCell = row.querySelectorAll("input[type=date]")[1];
+  if (select.value === "Yes") {
+    paymentCell.value = todayLocalISO(); // local date (fixes UTC issue)
+  } else {
+    paymentCell.value = "";
   }
-  updateCellColors(td.parentElement);
-  updateTotals();
-  highlightTodayPayments();
-  filterRows();
-}
-
-function updateCellColors(row){
-  const advanceTd = row.cells[5];
-  const paidTd = row.cells[6];
-  advanceTd.className = "";
-  advanceTd.classList.add(advanceTd.querySelector(".cell-text").textContent==="Yes"? "advance-yes-cell":"advance-no-cell");
-  paidTd.className = "";
-  paidTd.classList.add(paidTd.querySelector(".cell-text").textContent==="Yes"? "paid-cell":"unpaid-cell");
-}
-
-function deleteRow(btn){
-  if(confirm("Delete this student?")) btn.parentElement.parentElement.remove();
-  updateRowNumbers();
+  refreshPaidSelectStyle(row);
   updateTotals();
   highlightTodayPayments();
 }
 
-function saveData(){
+function refreshPaidSelectStyle(row) {
+  const sel = row.querySelector(".paidSelect");
+  sel.classList.remove("yes", "no");
+  sel.classList.add(sel.value === "Yes" ? "yes" : "no");
+}
+
+function deleteRow(btn) {
+  btn.closest("tr").remove();
+  updateSerialNumbers();
+  updateTotals();
+}
+
+/* ---------- Save / Load ---------- */
+function saveData() {
   const rows = tableBody.querySelectorAll("tr");
   const data = [];
   rows.forEach(r => {
+    const inputs = r.querySelectorAll("input, select");
     data.push({
-      name: r.cells[1].querySelector("input").value,
-      class: r.cells[2].querySelector("input").value,
-      joinDate: r.cells[3].querySelector("input").value,
-      fixedFee: r.cells[4].querySelector("input").value,
-      advance: r.cells[5].querySelector(".cell-text").textContent,
-      paid: r.cells[6].querySelector(".cell-text").textContent,
-      paymentDate: r.cells[7].querySelector("input").value
+      name: inputs[0].value,
+      class: inputs[1].value,
+      advance: inputs[2].value,
+      paid: inputs[3].value,
+      joinDate: inputs[4].value,
+      fixedFee: inputs[5].value,
+      paymentDate: inputs[6].value
     });
   });
-  localStorage.setItem("studentFee_" + monthSelect.value, JSON.stringify(data));
-  alert("Data saved for "+monthSelect.value);
+  localStorage.setItem("studentFee_" + currentMonth, JSON.stringify(data));
   populateMonths();
-}
-
-function loadData(month){
-  tableBody.innerHTML="";
-  const saved = localStorage.getItem("studentFee_" + month);
-  if(saved) JSON.parse(saved).forEach(r=>addRow(r));
-  else addRow();
   updateTotals();
-  highlightTodayPayments();
-  filterRows();
+  alert("Data saved for " + currentMonth);
 }
 
-function newMonth(){
-  const keys = Object.keys(localStorage).filter(k=>k.startsWith("studentFee_"));
-  let lastMonth = keys.length? keys.map(k=>k.replace("studentFee_","")).sort().pop():currentMonth;
-  const [monthName, year] = lastMonth.split(" ");
-  const monthIndex = new Date(Date.parse(monthName+" 1, 2025")).getMonth();
-  const nextMonthDate = new Date(year, monthIndex+1, 1);
-  currentMonth = nextMonthDate.toLocaleString("default",{month:"long",year:"numeric"});
-  tableBody.innerHTML="";
-  addRow();
-  saveData();
-  loadData(currentMonth);
+function loadData(month) {
+  tableBody.innerHTML = "";
+  currentMonth = month;
+  updateMonthDisplay();
+  const saved = JSON.parse(localStorage.getItem("studentFee_" + month) || "[]");
+  if (saved.length) saved.forEach(s => addRow(s));
+  else addRow();
 }
 
-function clearMonth(){
-  if(confirm("Delete all data for "+monthSelect.value+"?")){
-    localStorage.removeItem("studentFee_"+monthSelect.value);
-    populateMonths();
-    currentMonth = monthSelect.value = monthSelect.options[0]?.value || getCurrentMonth();
-    loadData(currentMonth);
+/* ---------- Months actions ---------- */
+function newMonth() {
+  const newMonthName = prompt("Enter new month name (e.g., August 2025):", "");
+  if (!newMonthName) return;
+
+  saveData(); // save current month first
+  const lastMonthData = JSON.parse(localStorage.getItem("studentFee_" + currentMonth) || "[]");
+
+  currentMonth = newMonthName;
+  saveMonthList(currentMonth);
+
+  tableBody.innerHTML = "";
+
+  if (lastMonthData.length) {
+    lastMonthData.forEach(student => addRow({
+      name: student.name,
+      class: student.class,
+      joinDate: student.joinDate,
+      fixedFee: student.fixedFee,
+      advance: student.advance,
+      paid: "No",
+      paymentDate: ""
+    }));
+  } else {
+    addRow();
+  }
+
+  populateMonths();
+  updateMonthDisplay();
+}
+
+function clearMonth() {
+  if (confirm("Delete all data for " + currentMonth + "?")) {
+    localStorage.removeItem("studentFee_" + currentMonth);
+    loadData(currentMonth); // keep month but clear rows
   }
 }
 
-function exportCSV(){
+/* ---------- Export ---------- */
+function exportCSV() {
   const rows = tableBody.querySelectorAll("tr");
-  if(!rows.length){ alert("No data to export!"); return; }
-  let csv = "No.,Student's Name,Class,Joining Date,Fixed Fee,Advance Fee,Fee Paid,Payment Date\n";
-  rows.forEach((r,i)=>{
-    const rowData = [
-      i+1,
-      r.cells[1].querySelector("input").value,
-      r.cells[2].querySelector("input").value,
-      r.cells[3].querySelector("input").value,
-      r.cells[4].querySelector("input").value,
-      r.cells[5].querySelector(".cell-text").textContent,
-      r.cells[6].querySelector(".cell-text").textContent,
-      r.cells[7].querySelector("input").value
-    ];
-    csv += rowData.join(",")+"\n";
+  if (!rows.length) { alert("No data!"); return; }
+
+  const esc = v => `"${String(v).replace(/"/g, '""')}"`;
+  let csv = '#,"Student\'s Name",Class,"Advance Fee","Fee Paid","Joining Date","Fixed Fee","Payment Date"\n';
+
+  rows.forEach((r, i) => {
+    const inputs = r.querySelectorAll("input, select");
+    const line = [
+      i + 1,
+      esc(inputs[0].value),
+      esc(inputs[1].value),
+      esc(inputs[2].value),
+      esc(inputs[3].value),
+      esc(inputs[4].value),
+      esc(inputs[5].value),
+      esc(inputs[6].value)
+    ].join(",");
+    csv += line + "\n";
   });
-  const blob = new Blob([csv],{type:"text/csv;charset=utf-8;"});
+
+  const blob = new Blob([csv], { type: "text/csv" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = monthSelect.value+".csv";
+  link.download = currentMonth + ".csv";
   link.click();
 }
 
-function updateTotals(){
-  let paid=0,unpaid=0;
-  tableBody.querySelectorAll("tr").forEach(r=>{
-    const fee = parseInt(r.cells[4].querySelector("input").value||0);
-    const status = r.cells[6].querySelector(".cell-text").textContent;
-    status==="Yes"?paid+=fee:unpaid+=fee;
+/* ---------- Totals & Highlights ---------- */
+function updateTotals() {
+  let paid = 0, unpaid = 0;
+  tableBody.querySelectorAll("tr").forEach(r => {
+    const feeVal = r.querySelector('input[type="number"]')?.value ?? "";
+    const fee = Number(feeVal);
+    const paidStatus = r.querySelectorAll("select")[1]?.value;
+    if (!Number.isNaN(fee)) {
+      if (paidStatus === "Yes") paid += fee;
+      else unpaid += fee;
+    }
   });
-  document.getElementById("paidTotal").textContent=paid;
-  document.getElementById("unpaidTotal").textContent=unpaid;
+  document.getElementById("paidTotal").textContent = paid;
+  document.getElementById("unpaidTotal").textContent = unpaid;
 }
 
-function highlightTodayPayments(){
-  const today = new Date().toISOString().split("T")[0];
-  tableBody.querySelectorAll("tr").forEach(r=>{
-    const pd = r.cells[7].querySelector("input").value;
-    if(pd===today) r.cells[7].classList.add("today");
-    else r.cells[7].classList.remove("today");
+function highlightTodayPayments() {
+  const today = todayLocalISO(); // local date
+  tableBody.querySelectorAll("tr").forEach(r => {
+    const cell = r.querySelectorAll('input[type="date"]')[1];
+    cell.style.backgroundColor = (cell.value === today) ? "#fff3b0" : "";
   });
 }
 
-// 🔹 Search/filter
-function filterRows(){
-  const query = searchInput.value.toLowerCase();
-  tableBody.querySelectorAll("tr").forEach(r=>{
-    const name = r.cells[1].querySelector("input").value.toLowerCase();
-    const cls = r.cells[2].querySelector("input").value.toLowerCase();
-    r.style.display = (name.includes(query) || cls.includes(query)) ? "" : "none";
-  });
-  updateTotals();
-}
-
-// 🔹 Sort table
-function sortTable(colIndex){
-  const rowsArray = Array.from(tableBody.querySelectorAll("tr"));
-  const asc = tableBody.dataset.sortCol !== colIndex || tableBody.dataset.sortOrder==="desc";
-  rowsArray.sort((a,b)=>{
-    let valA = colIndex<=4? parseFloat(a.cells[colIndex].querySelector("input")?.value||0) : a.cells[colIndex].querySelector(".cell-text")?.textContent || a.cells[colIndex].querySelector("input")?.value || "";
-    let valB = colIndex<=4? parseFloat(b.cells[colIndex].querySelector("input")?.value||0) : b.cells[colIndex].querySelector(".cell-text")?.textContent || b.cells[colIndex].querySelector("input")?.value || "";
-    if(valA<valB) return asc? -1:1;
-    if(valA>valB) return asc? 1:-1;
-    return 0;
-  });
-  rowsArray.forEach(r=>tableBody.appendChild(r));
-  updateRowNumbers();
-  tableBody.dataset.sortCol=colIndex;
-  tableBody.dataset.sortOrder=asc?"asc":"desc";
-  filterRows();
-}
-
-monthSelect.addEventListener("change",()=>{ currentMonth=monthSelect.value; loadData(currentMonth); });
-
-populateMonths(); loadData(currentMonth);
+/* ---------- Init ---------- */
+monthSelect.addEventListener("change", () => loadData(monthSelect.value));
+populateMonths();
+loadData(currentMonth);
 </script>
 </body>
 </html>
